@@ -1,0 +1,47 @@
+org: neetjn
+app: serverless-aws-node-sqs-tpl
+service: serverless-aws-node-sqs-tpl
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+constructs:
+  serverless-fn-queue:
+    type: queue
+    worker:
+      handler: handler.consumer
+
+resources:
+  Resources:
+    ErrorTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: 'serverless-error-topic'
+
+functions:
+  producer:
+    handler: handler.producer
+    events:
+      - httpApi:
+          method: post
+          path: /produce
+    environment:
+      QUEUE_URL: ${construct:serverless-fn-queue.queueUrl}
+
+custom:
+  sqs-alarms:
+    - queue: 'serverless-fn-queue'
+      topic: 'serverless-error-topic'
+      name: 'serverless-queue-alarm'
+      thresholds:
+        - 1
+        - 50
+        - 100
+        - 500
+
+plugins:
+  - serverless-lift
+  - serverless-plugin-aws-alerts
+  - serverless-sqs-alarms-plugin
