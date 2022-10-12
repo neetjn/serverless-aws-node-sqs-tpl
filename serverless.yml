@@ -24,17 +24,19 @@ custom:
   alerts:
     dashboards: true
     topics:
-      alarm: !Ref ErrorTopic
+      alarm:
+        topic:
+          Ref: ErrorTopic
     definitions:
       fnAlarm:
-        actionsEnabled: false
+        actionsEnabled: true
         description: 'Serverless lambda errors'
         namespace: 'AWS/Lambda'
-        nameTemplate: 
-        metric: duration
-        threshold: 200
-        statistic: Average
-        period: 300
+        nameTemplate: serverless-$[functionName]-error-alarm
+        metric: errors
+        threshold: 1
+        statistic: Minimum
+        period: 60
         evaluationPeriods: 1
         datapointsToAlarm: 1
         comparisonOperator: GreaterThanOrEqualToThreshold
