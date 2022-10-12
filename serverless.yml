@@ -20,17 +20,26 @@ resources:
       Properties:
         TopicName: 'serverless-error-topic'
 
-functions:
-  producer:
-    handler: handler.producer
-    events:
-      - httpApi:
-          method: post
-          path: /produce
-    environment:
-      QUEUE_URL: ${construct:serverless-fn-queue.queueUrl}
-
 custom:
+  alerts:
+    dashboards: true
+    topics:
+      alarm: !Ref ErrorTopic
+    definitions:
+      fnAlarm:
+        actionsEnabled: false
+        description: 'Serverless lambda errors'
+        namespace: 'AWS/Lambda'
+        nameTemplate: 
+        metric: duration
+        threshold: 200
+        statistic: Average
+        period: 300
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+      alarms:
+        - functionErrors
   sqs-alarms:
     - queue: 'serverless-fn-queue'
       topic: 'serverless-error-topic'
@@ -40,6 +49,18 @@ custom:
         - 50
         - 100
         - 500
+
+functions:
+  producer:
+    handler: handler.producer
+    events:
+      - httpApi:
+          method: post
+          path: /produce
+    environment:
+      QUEUE_URL: ${construct:serverless-fn-queue.queueUrl}
+    alarms:
+      - fnAlarm
 
 plugins:
   - serverless-lift
