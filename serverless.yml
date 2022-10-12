@@ -59,7 +59,7 @@ custom:
         metric: Errors
         threshold: 1
         statistic: Minimum
-        period: 60
+        period: 36e2
         evaluationPeriods: 1
         datapointsToAlarm: 1
         comparisonOperator: GreaterThanOrEqualToThreshold
