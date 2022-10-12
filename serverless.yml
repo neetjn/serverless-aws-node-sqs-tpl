@@ -19,6 +19,24 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: 'serverless-error-topic'
+    WarnTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: 'serverless-warn-topic'
+    # note: alarms can be created with just cloudformation
+    QueueSizeAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: 'Serverless queue size alarm'
+        Namespace: 'AWS/SQS'
+        MetricName: ApproximateAgeOfOldestMessage
+        Statistic: Average
+        Threshold: 8000
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        Period: 600
+        AlarmActions:
+          - Ref: WarnTopic
 
 custom:
   alerts:
@@ -29,22 +47,20 @@ custom:
           Ref: ErrorTopic
     definitions:
       fnAlarm:
-        actionsEnabled: true
         description: 'Serverless lambda errors'
         namespace: 'AWS/Lambda'
         nameTemplate: serverless-$[functionName]-error-alarm
-        metric: errors
+        metric: Errors
         threshold: 1
         statistic: Minimum
         period: 60
         evaluationPeriods: 1
         datapointsToAlarm: 1
         comparisonOperator: GreaterThanOrEqualToThreshold
-      alarms:
-        - functionErrors
+
   sqs-alarms:
     - queue: 'serverless-fn-queue'
-      topic: 'serverless-error-topic'
+      topic: !Ref WarnTopic
       name: 'serverless-queue-alarm'
       thresholds:
         - 1
