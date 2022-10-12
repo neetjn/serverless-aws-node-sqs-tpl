@@ -12,6 +12,10 @@ constructs:
     type: queue
     worker:
       handler: handler.consumer
+    extensions:
+      queue:
+        Properties:
+          QueueName: 'serverless-fn-queue'
 
 resources:
   Resources:
@@ -23,7 +27,6 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: 'serverless-warn-topic'
-    # note: alarms can be created with just cloudformation
     QueueSizeAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
@@ -35,6 +38,9 @@ resources:
         ComparisonOperator: GreaterThanOrEqualToThreshold
         EvaluationPeriods: 1
         Period: 600
+        Dimensions:
+          - Name: QueueName
+            Value: 'serverless-fn-queue'
         AlarmActions:
           - Ref: WarnTopic
 
