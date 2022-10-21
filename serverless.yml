@@ -1,0 +1,92 @@
+org: neetjn
+app: serverless-aws-node-sqs-tpl
+service: serverless-aws-node-sqs-tpl
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+constructs:
+  serverless-fn-queue:
+    type: queue
+    worker:
+      handler: handler.consumer
+    extensions:
+      queue:
+        Properties:
+          QueueName: 'serverless-fn-queue'
+
+resources:
+  Resources:
+    ErrorTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: 'serverless-error-topic'
+    WarnTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: 'serverless-warn-topic'
+    QueueSizeAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: 'Serverless queue size alarm'
+        Namespace: 'AWS/SQS'
+        MetricName: ApproximateAgeOfOldestMessage
+        Statistic: Average
+        Threshold: 8000
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        Period: 600
+        Dimensions:
+          - Name: QueueName
+            Value: 'serverless-fn-queue'
+        AlarmActions:
+          - Ref: WarnTopic
+
+custom:
+  alerts:
+    dashboards: true
+    topics:
+      alarm:
+        topic:
+          Ref: ErrorTopic
+    definitions:
+      fnAlarm:
+        description: 'Serverless lambda errors'
+        namespace: 'AWS/Lambda'
+        nameTemplate: serverless-$[functionName]-error-alarm
+        metric: Errors
+        threshold: 1
+        statistic: Minimum
+        period: 36e2
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+
+  sqs-alarms:
+    - queue: 'serverless-fn-queue'
+      topic: !Ref WarnTopic
+      name: 'serverless-queue-alarm'
+      thresholds:
+        - 1
+        - 50
+        - 100
+        - 500
+
+functions:
+  producer:
+    handler: handler.producer
+    events:
+      - httpApi:
+          method: post
+          path: /produce
+    environment:
+      QUEUE_URL: ${construct:serverless-fn-queue.queueUrl}
+    alarms:
+      - fnAlarm
+
+plugins:
+  - serverless-lift
+  - serverless-plugin-aws-alerts
+  - serverless-sqs-alarms-plugin

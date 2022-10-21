@@ -1,0 +1,12 @@
+{
+  "name": "serverless-aws-node-sqs-tpl",
+  "version": "1.0.0",
+  "description": "Serverless Framework Node SQS Producer-Consumer on AWS",
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless-lift": "^1.1.2",
+    "serverless-plugin-aws-alerts": "^1.7.5",
+    "serverless-sqs-alarms-plugin": "^0.1.7"
+  }
+}
